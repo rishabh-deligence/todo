@@ -4,16 +4,30 @@ const Tutorial = db.tutorials;
 // Create and Save a new Tutorial
 exports.create = (req, res) => {
   // Validate request
-  if (!req.body.title) {
-    res.status(400).send({ message: "Content can not be empty!" });
+  if (!req.body.title || !req.body.state || !req.body.location) {
+    res.status(400).send({ message: "title and state, required and location are required" });
     return;
   }
 
+  if (req.body.state !== "scheduled" && req.body.state !== "done") {
+    res.status(400).send({ message: "State can either be scheduled or done" });
+    return;
+  }
+
+  if (!Array.isArray(req.body.location)) {
+    res.status(400).send({ message: "only [lat, long] are allowed in localtion" });
+    return;
+  }
+  
+  if (req.body.location.length !== 2) {
+    res.status(400).send({ message: "only [lat, long] are allowed in localtion" });
+    return;
+  }
   // Create a Tutorial
   const tutorial = new Tutorial({
     title: req.body.title,
-    description: req.body.description,
-    published: req.body.published ? req.body.published : false
+    state: req.body.state,
+    location: req.body.location
   });
 
   // Save Tutorial in the database
@@ -25,7 +39,7 @@ exports.create = (req, res) => {
     .catch(err => {
       res.status(500).send({
         message:
-          err.message || "Some error occurred while creating the Tutorial."
+          err.message || "Some error occurred while creating the Todo."
       });
     });
 };
@@ -42,7 +56,7 @@ exports.findAll = (req, res) => {
     .catch(err => {
       res.status(500).send({
         message:
-          err.message || "Some error occurred while retrieving tutorials."
+          err.message || "Some error occurred while retrieving Todo."
       });
     });
 };
@@ -54,22 +68,37 @@ exports.findOne = (req, res) => {
   Tutorial.findById(id)
     .then(data => {
       if (!data)
-        res.status(404).send({ message: "Not found Tutorial with id " + id });
+        res.status(404).send({ message: "Not found Todo with id " + id });
       else res.send(data);
     })
     .catch(err => {
       res
         .status(500)
-        .send({ message: "Error retrieving Tutorial with id=" + id });
+        .send({ message: "Error retrieving Todo with id=" + id });
     });
 };
 
 // Update a Tutorial by the id in the request
 exports.update = (req, res) => {
-  if (!req.body) {
+  if (Object.keys(req.body).length == 0) {
     return res.status(400).send({
       message: "Data to update can not be empty!"
     });
+  }
+
+  if (req.body.state && req.body.state !== "scheduled" && req.body.state !== "done") {
+    res.status(400).send({ message: "State can either be scheduled or done" });
+    return;
+  }
+
+  if (req.body.location && !Array.isArray(req.body.location)) {
+    res.status(400).send({ message: "only [lat, long] are allowed in localtion" });
+    return;
+  }
+  
+  if (req.body.location && req.body.location.length !== 2) {
+    res.status(400).send({ message: "only [lat, long] are allowed in localtion" });
+    return;
   }
 
   const id = req.params.id;
@@ -78,13 +107,13 @@ exports.update = (req, res) => {
     .then(data => {
       if (!data) {
         res.status(404).send({
-          message: `Cannot update Tutorial with id=${id}. Maybe Tutorial was not found!`
+          message: `Cannot update Todo with id=${id}. Maybe Todo was not found!`
         });
-      } else res.send({ message: "Tutorial was updated successfully." });
+      } else res.send({ message: "Todo was updated successfully." });
     })
     .catch(err => {
       res.status(500).send({
-        message: "Error updating Tutorial with id=" + id
+        message: "Error updating Todo with id=" + id
       });
     });
 };
@@ -97,17 +126,17 @@ exports.delete = (req, res) => {
     .then(data => {
       if (!data) {
         res.status(404).send({
-          message: `Cannot delete Tutorial with id=${id}. Maybe Tutorial was not found!`
+          message: `Cannot delete Todo with id=${id}. Maybe Todo was not found!`
         });
       } else {
         res.send({
-          message: "Tutorial was deleted successfully!"
+          message: "Todo was deleted successfully!"
         });
       }
     })
     .catch(err => {
       res.status(500).send({
-        message: "Could not delete Tutorial with id=" + id
+        message: "Could not delete Todo with id=" + id
       });
     });
 };
